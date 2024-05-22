@@ -15,10 +15,19 @@ logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(
 
 fake = Faker()
 REDIS_HOST = os.getenv('REDIS_HOST')
+DB_HOST = os.getenv('DB_HOST')
+DB_USERNAME = os.getenv('DB_USERNAME')
+DB_PASSWORD = os.getenv('DB_PASSWORD')
 CONTAINER_ID = str(uuid.uuid4())
 
 r = redis.Redis(host=REDIS_HOST, port=6379, db=0)
-DATABASE_URL_TEMPLATE = 'mysql+pymysql://user:password@db_host/{}'
+
+# Define the database URL template
+DATABASE_URL_TEMPLATE = 'mysql+pymysql://{username}:{password}@{host}/{{}}'
+
+# Format the template with actual values
+database_url_tmp = DATABASE_URL_TEMPLATE.format(username=DB_USERNAME, password=DB_PASSWORD, host=DB_HOST)
+
 
 def get_available_database():
     for key in r.scan_iter("database:*"):
@@ -107,7 +116,7 @@ def insert_data():
     if not db_name:
         return
 
-    database_url = DATABASE_URL_TEMPLATE.format(db_name)
+    database_url = database_url_tmp.format(db_name)
     engine = create_engine(database_url)
     valid_silo_ids = get_valid_ids(engine, 'ceres_silos', 'ID_Silo')
     valid_filial_ids = get_valid_ids(engine, 'ceres_filiais', 'ID_Filial')

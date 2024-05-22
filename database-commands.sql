@@ -1,3 +1,5 @@
+CREATE DATABASE report_db;
+
 CREATE TABLE execution_logs (
     id INT AUTO_INCREMENT PRIMARY KEY,
     container_id VARCHAR(255),

@@ -14,8 +14,13 @@ services:
     build:
       context: .
       dockerfile: Dockerfile.ceres_medicoes_info
+    environment_file:
+      - .env      
     environment:
-      - REDIS_HOST=redis
+      - REDIS_HOST=${REDIS_HOST}
+      - DB_HOST=${DB_HOST}
+      - DB_USERNAME=${DB_USERNAME}
+      - DB_PASSWORD=${DB_PASSWORD}
     depends_on:
       - redis
     deploy:
@@ -29,8 +34,13 @@ services:
     build:
       context: .
       dockerfile: Dockerfile.ceres_medicoes_historico
+    environment_file:
+      - .env      
     environment:
-      - REDIS_HOST=redis
+      - REDIS_HOST=${REDIS_HOST}
+      - DB_HOST=${DB_HOST}
+      - DB_USERNAME=${DB_USERNAME}
+      - DB_PASSWORD=${DB_PASSWORD}
     depends_on:
       - redis
     deploy:
