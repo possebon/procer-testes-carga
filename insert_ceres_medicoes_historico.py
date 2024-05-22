@@ -97,7 +97,9 @@ def get_session(engine):
     finally:
         session.close()
 
-def log_execution(engine, db_name, status, execution_time):
+def log_execution(db_name, status, execution_time):
+    report_db_url = DATABASE_URL_TEMPLATE.format(username=DB_USERNAME, password=DB_PASSWORD, host=DB_HOST, db='report_db')
+    engine = create_engine(report_db_url)
     metadata = MetaData(bind=engine)
     metadata.reflect(bind=engine)
     execution_logs = Table('execution_logs', metadata, autoload=True)
