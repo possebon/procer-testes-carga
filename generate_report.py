@@ -3,7 +3,16 @@ import pandas as pd
 from sqlalchemy import create_engine
 from fpdf import FPDF
 
-DATABASE_URL = os.getenv('DATABASE_URL')
+DB_HOST = os.getenv('DB_HOST')
+DB_USERNAME = os.getenv('DB_USERNAME')
+DB_PASSWORD = os.getenv('DB_PASSWORD')
+REDIS_HOST = os.getenv('REDIS_HOST')
+
+# Define the database URL template
+DATABASE_URL_TEMPLATE = 'mysql+pymysql://{username}:{password}@{host}/report_db'
+
+# Format the template with actual values
+DATABASE_URL = DATABASE_URL_TEMPLATE.format(username=DB_USERNAME, password=DB_PASSWORD, host=DB_HOST)
 
 engine = create_engine(DATABASE_URL)
 

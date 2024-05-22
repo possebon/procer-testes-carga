@@ -6,8 +6,16 @@ from sqlalchemy import create_engine
 # Set up logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
-DATABASE_URL = os.getenv('DATABASE_URL')
+DB_HOST = os.getenv('DB_HOST')
+DB_USERNAME = os.getenv('DB_USERNAME')
+DB_PASSWORD = os.getenv('DB_PASSWORD')
 REDIS_HOST = os.getenv('REDIS_HOST')
+
+# Define the database URL template
+DATABASE_URL_TEMPLATE = 'mysql+pymysql://{username}:{password}@{host}'
+
+# Format the template with actual values
+DATABASE_URL = DATABASE_URL_TEMPLATE.format(username=DB_USERNAME, password=DB_PASSWORD, host=DB_HOST)
 
 def fetch_databases():
     engine = create_engine(DATABASE_URL)
