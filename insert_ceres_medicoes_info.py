@@ -120,6 +120,8 @@ def insert_data():
         return
 
     database_url = database_url_tmp.format(db_name)
+    print(database_url)
+    time.sleep(60)
     engine = create_engine(database_url)
     valid_silo_ids = get_valid_ids(engine, 'ceres_silos', 'ID_Silo')
     valid_filial_ids = get_valid_ids(engine, 'ceres_filiais', 'ID_Filial')
