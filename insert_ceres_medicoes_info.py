@@ -110,21 +110,21 @@ def log_execution(engine, db_name, status, execution_time):
         session.commit()
 
 def insert_data():
-    db_name = get_available_database()
-    if not db_name:
-        return
-
-    database_url = DATABASE_URL_TEMPLATE.format(username=DB_USERNAME, password=DB_PASSWORD, host=DB_HOST, dbname=db_name)
-    time.sleep(3)
-    engine = create_engine(database_url)
-    valid_silo_ids = get_valid_ids(engine, 'ceres_silos', 'ID_Silo')
-    valid_filial_ids = get_valid_ids(engine, 'ceres_filiais', 'ID_Filial')
-
-    metadata = MetaData(bind=engine)
-    metadata.reflect(bind=engine)
-    ceres_medicoes_info = Table('ceres_medicoes_info', metadata, autoload=True)
-
     while True:
+        db_name = get_available_database()
+        if not db_name:
+            return
+
+        database_url = DATABASE_URL_TEMPLATE.format(username=DB_USERNAME, password=DB_PASSWORD, host=DB_HOST, dbname=db_name)
+        time.sleep(3)
+        engine = create_engine(database_url)
+        valid_silo_ids = get_valid_ids(engine, 'ceres_silos', 'ID_Silo')
+        valid_filial_ids = get_valid_ids(engine, 'ceres_filiais', 'ID_Filial')
+
+        metadata = MetaData(bind=engine)
+        metadata.reflect(bind=engine)
+        ceres_medicoes_info = Table('ceres_medicoes_info', metadata, autoload=True)
+
         start_time = time.time()
         data = generate_random_data(valid_silo_ids, valid_filial_ids)
         ins = ceres_medicoes_info.insert().values(data)
