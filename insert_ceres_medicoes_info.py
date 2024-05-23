@@ -30,10 +30,12 @@ def get_available_database():
     database_list = Table('database_list', metadata, autoload=True)
     
     with engine.connect() as connection:
-        query = select([database_list.c.database_name]).where(database_list.c.status == 'available').limit(1)
+        # Select a random database that is available
+        query = select([database_list.c.database_name]).where(database_list.c.status == 'available').order_by(database_list.c.database_name).limit(1)
         result = connection.execute(query).fetchone()
         if result:
             db_name = result[0]
+            # Update the database status to 'executing' to prevent other processes from picking it
             update_query = update(database_list).where(database_list.c.database_name == db_name).values(status='executing')
             connection.execute(update_query)
             return db_name
