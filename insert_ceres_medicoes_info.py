@@ -2,10 +2,9 @@ import os
 import random
 import logging
 import time
-import redis
 from datetime import datetime
 from faker import Faker
-from sqlalchemy import create_engine, MetaData, Table
+from sqlalchemy import create_engine, MetaData, Table, select, update
 from sqlalchemy.orm import sessionmaker
 from contextlib import contextmanager
 import uuid
@@ -14,25 +13,33 @@ import uuid
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
 fake = Faker()
-REDIS_HOST = os.getenv('REDIS_HOST')
 DB_HOST = os.getenv('DB_HOST')
 DB_USERNAME = os.getenv('DB_USERNAME')
 DB_PASSWORD = os.getenv('DB_PASSWORD')
 CONTAINER_ID = str(uuid.uuid4())
 
-r = redis.Redis(host=REDIS_HOST, port=6379, db=0)
-
 # Define the database URL template
 DATABASE_URL_TEMPLATE = 'mysql+pymysql://{username}:{password}@{host}/{dbname}'
 
+# Connection URL for the report_db
+REPORT_DB_URL = DATABASE_URL_TEMPLATE.format(username=DB_USERNAME, password=DB_PASSWORD, host=DB_HOST, dbname='report_db')
+
 def get_available_database():
-    for key in r.scan_iter("database:*"):
-        if r.get(key) == b'available':
-            db_name = key.decode('utf-8').split(':')[1]
-            r.set(key, 'executing')
+    engine = create_engine(REPORT_DB_URL)
+    metadata = MetaData(bind=engine)
+    database_list = Table('database_list', metadata, autoload=True)
+    
+    with engine.connect() as connection:
+        query = select([database_list.c.database_name]).where(database_list.c.status == 'available').limit(1)
+        result = connection.execute(query).fetchone()
+        if result:
+            db_name = result[0]
+            update_query = update(database_list).where(database_list.c.database_name == db_name).values(status='executing')
+            connection.execute(update_query)
             return db_name
-    logging.error('No available database found in Redis')
-    return None
+        else:
+            logging.error('No available database found')
+            return None
 
 def get_valid_ids(engine, table, id_field):
     metadata = MetaData(bind=engine)
@@ -140,7 +147,10 @@ def insert_data():
             log_execution(engine, db_name, 'failed', execution_time)
             logging.error(f'Insert failed into {db_name}: {e}')
         finally:
-            r.set(f'database:{db_name}', 'available')
+            # Update the status of the database back to 'available'
+            with engine.connect() as connection:
+                update_query = update(Table('database_list', MetaData(bind=engine), autoload=True)).where(Table('database_list').c.database_name == db_name).values(status='available')
+                connection.execute(update_query)
         time.sleep(120)  # Sleep for 2 minutes
 
 if __name__ == '__main__':
