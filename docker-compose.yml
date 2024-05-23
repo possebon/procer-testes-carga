@@ -14,18 +14,11 @@ services:
 
   ceres_medicoes_info:
     image: ceres_medicoes_info:latest
-    # build:
-    #   context: .
-    #   dockerfile: Dockerfile.ceres_medicoes_info
-    # environment_file:
-    #   - .env      
     environment:
-      - REDIS_HOST=${REDIS_HOST}
       - DB_HOST=${DB_HOST}
       - DB_USERNAME=${DB_USERNAME}
       - DB_PASSWORD=${DB_PASSWORD}
-    # depends_on:
-    #   - redis
+      - REPORT_DB_NAME=${REPORT_DB_NAME}
     deploy:
       replicas: 1
       resources:
