@@ -14,8 +14,8 @@ services:
     build:
       context: .
       dockerfile: Dockerfile.ceres_medicoes_info
-    environment_file:
-      - .env      
+    # environment_file:
+    #   - .env      
     environment:
       - REDIS_HOST=${REDIS_HOST}
       - DB_HOST=${DB_HOST}
