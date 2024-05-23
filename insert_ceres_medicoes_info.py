@@ -2,6 +2,7 @@ import os
 import random
 import logging
 import time
+import signal
 from datetime import datetime
 from faker import Faker
 from sqlalchemy import create_engine, MetaData, Table, select, update
@@ -24,18 +25,18 @@ DATABASE_URL_TEMPLATE = 'mysql+pymysql://{username}:{password}@{host}/{dbname}'
 # Connection URL for the report_db
 REPORT_DB_URL = DATABASE_URL_TEMPLATE.format(username=DB_USERNAME, password=DB_PASSWORD, host=DB_HOST, dbname='report_db')
 
+selected_db_name = None
+
 def get_available_database():
     engine = create_engine(REPORT_DB_URL)
     metadata = MetaData(bind=engine)
     database_list = Table('database_list', metadata, autoload=True)
     
     with engine.connect() as connection:
-        # Select a random database that is available
         query = select([database_list.c.database_name]).where(database_list.c.status == 'available').order_by(database_list.c.database_name).limit(1)
         result = connection.execute(query).fetchone()
         if result:
             db_name = result[0]
-            # Update the database status to 'executing' to prevent other processes from picking it
             update_query = update(database_list).where(database_list.c.database_name == db_name).values(status='executing')
             connection.execute(update_query)
             return db_name
@@ -48,7 +49,7 @@ def get_valid_ids(engine, table, id_field):
     metadata.reflect(bind=engine)
     table = Table(table, metadata, autoload=True)
     session = sessionmaker(bind=engine)()
-    return [row[0] for row in session.query(getattr(table.c, id_field)).all()]
+    return [row[0] for row in session.query(getattr(table.c, id_field)).all()
 
 def generate_random_data(valid_silo_ids, valid_filial_ids):
     return {
@@ -117,22 +118,15 @@ def log_execution(engine, db_name, status, execution_time):
         session.execute(ins)
         session.commit()
 
-def insert_data():
+def insert_data(engine, db_name):
+    valid_silo_ids = get_valid_ids(engine, 'ceres_silos', 'ID_Silo')
+    valid_filial_ids = get_valid_ids(engine, 'ceres_filiais', 'ID_Filial')
+
+    metadata = MetaData(bind=engine)
+    metadata.reflect(bind=engine)
+    ceres_medicoes_info = Table('ceres_medicoes_info', metadata, autoload=True)
+
     while True:
-        db_name = get_available_database()
-        if not db_name:
-            return
-
-        database_url = DATABASE_URL_TEMPLATE.format(username=DB_USERNAME, password=DB_PASSWORD, host=DB_HOST, dbname=db_name)
-        time.sleep(3)
-        engine = create_engine(database_url)
-        valid_silo_ids = get_valid_ids(engine, 'ceres_silos', 'ID_Silo')
-        valid_filial_ids = get_valid_ids(engine, 'ceres_filiais', 'ID_Filial')
-
-        metadata = MetaData(bind=engine)
-        metadata.reflect(bind=engine)
-        ceres_medicoes_info = Table('ceres_medicoes_info', metadata, autoload=True)
-
         start_time = time.time()
         data = generate_random_data(valid_silo_ids, valid_filial_ids)
         ins = ceres_medicoes_info.insert().values(data)
@@ -147,14 +141,26 @@ def insert_data():
             execution_time = time.time() - start_time
             log_execution(engine, db_name, 'failed', execution_time)
             logging.error(f'Insert failed into {db_name}: {e}')
-        finally:
-            # Update the status of the database back to 'available'
-            report_db_engine = create_engine(REPORT_DB_URL)
-            with report_db_engine.connect() as connection:
-                database_list = Table('database_list', MetaData(bind=report_db_engine), autoload=True)
-                update_query = update(database_list).where(database_list.c.database_name == db_name).values(status='available')
-                connection.execute(update_query)
         time.sleep(120)  # Sleep for 2 minutes
 
+def cleanup(*args):
+    if selected_db_name:
+        logging.info(f'Cleaning up: setting {selected_db_name} back to available')
+        engine = create_engine(REPORT_DB_URL)
+        with engine.connect() as connection:
+            database_list = Table('database_list', MetaData(bind=engine), autoload=True)
+            update_query = update(database_list).where(database_list.c.database_name == selected_db_name).values(status='available')
+            connection.execute(update_query)
+    logging.info('Exiting')
+    exit(0)
+
 if __name__ == '__main__':
-    insert_data()
+    signal.signal(signal.SIGINT, cleanup)
+    signal.signal(signal.SIGTERM, cleanup)
+
+    selected_db_name = get_available_database()
+    if not selected_db_name:
+        exit(1)
+
+    db_engine = create_engine(DATABASE_URL_TEMPLATE.format(username=DB_USERNAME, password=DB_PASSWORD, host=DB_HOST, dbname=selected_db_name))
+    insert_data(db_engine, selected_db_name)
