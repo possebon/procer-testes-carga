@@ -126,7 +126,7 @@ def insert_data():
 
     metadata = MetaData(bind=engine)
     metadata.reflect(bind=engine)
-    ceres_medicoes_historico = Table('ceres_medicoes_historico', metadata, autoload=True)
+    ceres_medicoes_historico = Table('ceres_historico', metadata, autoload=True)
 
     while True:
         start_time = time.time()
