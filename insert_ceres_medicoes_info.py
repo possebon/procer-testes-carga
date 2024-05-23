@@ -25,10 +25,6 @@ r = redis.Redis(host=REDIS_HOST, port=6379, db=0)
 # Define the database URL template
 DATABASE_URL_TEMPLATE = 'mysql+pymysql://{username}:{password}@{host}/{dbname}'
 
-# Format the template with actual values
-database_url_tmp = DATABASE_URL_TEMPLATE.format(username=DB_USERNAME, password=DB_PASSWORD, host=DB_HOST, dbname="")
-
-
 def get_available_database():
     for key in r.scan_iter("database:*"):
         if r.get(key) == b'available':
@@ -98,9 +94,7 @@ def get_session(engine):
         session.close()
 
 def log_execution(engine, db_name, status, execution_time):
-    print("entrei no log_execution")
     report_db_url = DATABASE_URL_TEMPLATE.format(username=DB_USERNAME, password=DB_PASSWORD, host=DB_HOST, dbname='report_db')
-    print(report_db_url)
     engine = create_engine(report_db_url)
     metadata = MetaData(bind=engine)
     metadata.reflect(bind=engine)
@@ -115,14 +109,12 @@ def log_execution(engine, db_name, status, execution_time):
         session.execute(ins)
         session.commit()
 
-
 def insert_data():
     db_name = get_available_database()
     if not db_name:
         return
 
-    database_url = database_url_tmp.format(dbname=db_name)
-    print(database_url)
+    database_url = DATABASE_URL_TEMPLATE.format(username=DB_USERNAME, password=DB_PASSWORD, host=DB_HOST, dbname=db_name)
     time.sleep(3)
     engine = create_engine(database_url)
     valid_silo_ids = get_valid_ids(engine, 'ceres_silos', 'ID_Silo')
