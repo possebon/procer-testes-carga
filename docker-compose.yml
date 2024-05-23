@@ -11,9 +11,10 @@ services:
           memory: 256M
 
   ceres_medicoes_info:
-    build:
-      context: .
-      dockerfile: Dockerfile.ceres_medicoes_info
+    image: ceres_medicoes_info:latest
+    # build:
+    #   context: .
+    #   dockerfile: Dockerfile.ceres_medicoes_info
     # environment_file:
     #   - .env      
     environment:
