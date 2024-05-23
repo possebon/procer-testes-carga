@@ -101,8 +101,7 @@ def get_session(engine):
         session.close()
 
 def log_execution(engine, db_name, status, execution_time):
-    report_db_url = DATABASE_URL_TEMPLATE.format(username=DB_USERNAME, password=DB_PASSWORD, host=DB_HOST, dbname='report_db')
-    engine = create_engine(report_db_url)
+    engine = create_engine(REPORT_DB_URL)
     metadata = MetaData(bind=engine)
     metadata.reflect(bind=engine)
     execution_logs = Table('execution_logs', metadata, autoload=True)
@@ -148,8 +147,10 @@ def insert_data():
             logging.error(f'Insert failed into {db_name}: {e}')
         finally:
             # Update the status of the database back to 'available'
-            with engine.connect() as connection:
-                update_query = update(Table('database_list', MetaData(bind=engine), autoload=True)).where(Table('database_list').c.database_name == db_name).values(status='available')
+            report_db_engine = create_engine(REPORT_DB_URL)
+            with report_db_engine.connect() as connection:
+                database_list = Table('database_list', MetaData(bind=report_db_engine), autoload=True)
+                update_query = update(database_list).where(database_list.c.database_name == db_name).values(status='available')
                 connection.execute(update_query)
         time.sleep(120)  # Sleep for 2 minutes
 
