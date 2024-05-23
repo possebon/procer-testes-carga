@@ -49,7 +49,7 @@ def get_valid_ids(engine, table, id_field):
     metadata.reflect(bind=engine)
     table = Table(table, metadata, autoload=True)
     session = sessionmaker(bind=engine)()
-    return [row[0] for row in session.query(getattr(table.c, id_field)).all()
+    return row[0] for row in session.query(getattr(table.c, id_field)).all()
 
 def generate_random_data(valid_silo_ids, valid_filial_ids):
     return {
