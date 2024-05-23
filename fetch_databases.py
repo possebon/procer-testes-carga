@@ -1,7 +1,7 @@
 import os
 import logging
 import redis
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine, text
 
 # Set up logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
@@ -19,13 +19,13 @@ DATABASE_URL = DATABASE_URL_TEMPLATE.format(username=DB_USERNAME, password=DB_PA
 
 def fetch_databases():
     engine = create_engine(DATABASE_URL)
-    query = """
+    query = text("""
     SELECT SCHEMA_NAME
     FROM INFORMATION_SCHEMA.SCHEMATA
     WHERE SCHEMA_NAME LIKE 'ceres_%'
     AND SCHEMA_NAME <> 'ceres_backoffice_old2'
     ORDER BY 1;
-    """
+    """)
     with engine.connect() as connection:
         result = connection.execute(query)
         databases = [row[0] for row in result]
