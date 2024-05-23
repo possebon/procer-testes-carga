@@ -15,7 +15,23 @@ REDIS_HOST = os.getenv('FETCH_REDIS_HOST')
 DATABASE_URL_TEMPLATE = 'mysql+pymysql://{username}:{password}@{host}'
 
 # Format the template with actual values
-DATABASE_URL = DATABASE_URL_TEMPLATE.format(username=DB_USERNAME, password=DB_PASSWORD, host=D
+DATABASE_URL = DATABASE_URL_TEMPLATE.format(username=DB_USERNAME, password=DB_PASSWORD, host=DB_HOST)
+
+def fetch_databases():
+    engine = create_engine(DATABASE_URL)
+    query = text("""
+    SELECT SCHEMA_NAME
+    FROM INFORMATION_SCHEMA.SCHEMATA
+    WHERE SCHEMA_NAME LIKE 'ceres_%'
+    AND SCHEMA_NAME <> 'ceres_backoffice_old2'
+    ORDER BY 1;
+    """)
+    with engine.connect() as connection:
+        result = connection.execute(query)
+        databases = [row[0] for row in result]
+    logging.info(f'Fetched databases: {databases}')
+    return databases
+
 def store_databases_in_redis(databases):
     r = redis.Redis(host=REDIS_HOST, port=6379, db=0)
     for db in databases:
