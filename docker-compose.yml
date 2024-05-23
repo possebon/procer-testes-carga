@@ -3,6 +3,8 @@ version: '3.8'
 services:
   redis:
     image: redis:alpine
+    ports:
+      - "6739:6739"
     deploy:
       replicas: 1
       resources:
