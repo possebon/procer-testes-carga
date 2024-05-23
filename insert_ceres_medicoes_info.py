@@ -26,7 +26,7 @@ r = redis.Redis(host=REDIS_HOST, port=6379, db=0)
 DATABASE_URL_TEMPLATE = 'mysql+pymysql://{username}:{password}@{host}/{dbname}'
 
 # Format the template with actual values
-database_url_tmp = DATABASE_URL_TEMPLATE.format(username=DB_USERNAME, password=DB_PASSWORD, host=DB_HOST)
+database_url_tmp = DATABASE_URL_TEMPLATE.format(username=DB_USERNAME, password=DB_PASSWORD, host=DB_HOST, dbname="")
 
 
 def get_available_database():
