@@ -30,22 +30,22 @@ services:
           cpus: '0.50'
           memory: 512M
 
-  ceres_medicoes_historico:
-    build:
-      context: .
-      dockerfile: Dockerfile.ceres_medicoes_historico
-    environment_file:
-      - .env      
-    environment:
-      - REDIS_HOST=${REDIS_HOST}
-      - DB_HOST=${DB_HOST}
-      - DB_USERNAME=${DB_USERNAME}
-      - DB_PASSWORD=${DB_PASSWORD}
-    depends_on:
-      - redis
-    deploy:
-      replicas: 1
-      resources:
-        limits:
-          cpus: '0.50'
-          memory: 512M
+  # ceres_medicoes_historico:
+  #   build:
+  #     context: .
+  #     dockerfile: Dockerfile.ceres_medicoes_historico
+  #   environment_file:
+  #     - .env      
+  #   environment:
+  #     - REDIS_HOST=${REDIS_HOST}
+  #     - DB_HOST=${DB_HOST}
+  #     - DB_USERNAME=${DB_USERNAME}
+  #     - DB_PASSWORD=${DB_PASSWORD}
+  #   depends_on:
+  #     - redis
+  #   deploy:
+  #     replicas: 1
+  #     resources:
+  #       limits:
+  #         cpus: '0.50'
+  #         memory: 512M
