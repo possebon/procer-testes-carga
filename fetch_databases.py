@@ -19,7 +19,7 @@ DATABASE_URL = DATABASE_URL_TEMPLATE.format(username=DB_USERNAME, password=DB_PA
 REPORT_DB_URL = DATABASE_URL_TEMPLATE.format(username=DB_USERNAME, password=DB_PASSWORD, host=DB_HOST, dbname=REPORT_DB_NAME)
 
 def fetch_databases():
-    engine = create_engine(DATABASE_URL)
+    engine = create_engine(REPORT_DB_URL)
     query = text("""
     SELECT SCHEMA_NAME
     FROM INFORMATION_SCHEMA.SCHEMATA
