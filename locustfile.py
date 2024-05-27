@@ -134,11 +134,11 @@ def insert_data(engine, db_name):
             session.execute(ins)
             session.commit()
         execution_time = time.time() - start_time
-        log_execution(engine, db_name, 'success', execution_time)
+        # log_execution(engine, db_name, 'success', execution_time)
         logging.info(f'Insert successful into {db_name}')
     except Exception as e:
         execution_time = time.time() - start_time
-        log_execution(engine, db_name, 'failed', execution_time)
+        # log_execution(engine, db_name, 'failed', execution_time)
         logging.error(f'Insert failed into {db_name}: {e}')
 
 class DatabaseUser(HttpUser):
