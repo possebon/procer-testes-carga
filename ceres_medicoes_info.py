@@ -62,7 +62,7 @@ def get_valid_ids(engine, table_name, id_field):
     table = Table(table_name, metadata, autoload_with=engine)
     with engine.connect() as conn:
         result = conn.execute(select(table.c[id_field]))
-        return [row[id_field] for row in result]
+        return [row[0] for row in result]
 
 def generate_random_data(valid_silo_ids, valid_filial_ids):
     return {
