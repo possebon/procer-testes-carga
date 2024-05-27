@@ -110,19 +110,6 @@ def get_session(engine):
     finally:
         session.close()
 
-def log_execution(engine, db_name, status, execution_time):
-    metadata = MetaData()
-    execution_logs = Table('execution_logs', metadata, autoload_with=engine)
-    with get_session(engine) as session:
-        ins = execution_logs.insert().values(
-            container_id=CONTAINER_ID,
-            database_name=db_name,
-            status=status,
-            execution_time=execution_time
-        )
-        session.execute(ins)
-        session.commit()
-
 def insert_data(engine, db_name):
     valid_silo_ids = get_valid_ids(engine, 'ceres_silos', 'ID_Silo')
     valid_filial_ids = get_valid_ids(engine, 'ceres_filiais', 'ID_Filial')
@@ -137,12 +124,8 @@ def insert_data(engine, db_name):
         with get_session(engine) as session:
             session.execute(ins)
             session.commit()
-        execution_time = time.time() - start_time
-        log_execution(engine, db_name, 'success', execution_time)
         logging.info(f'Insert successful into {db_name}')
     except Exception as e:
-        execution_time = time.time() - start_time
-        log_execution(engine, db_name, 'failed', execution_time)
         logging.error(f'Insert failed into {db_name}: {e}')
 
 class DatabaseUser(HttpUser):
