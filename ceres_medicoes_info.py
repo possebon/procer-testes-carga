@@ -81,7 +81,7 @@ def insert_data(engine, db_name):
 class DatabaseTaskSet(TaskSet):
     def on_start(self):
         self.engine_dict = {}
-        num_databases = len(self.user.environment.runner.user_classes[DatabaseUser].users)
+        num_databases = self.user.environment.runner.user_count
         for i in range(1, num_databases + 1):
             db_name = f"{DB_PREFIX}{i}"
             engine = create_engine(f"mysql+pymysql://{DB_USER}:{DB_PASSWORD}@{DB_HOST}/{db_name}")
