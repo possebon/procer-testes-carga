@@ -5,7 +5,7 @@ import time
 import uuid
 from datetime import datetime
 from faker import Faker
-from sqlalchemy import create_engine, MetaData, Table, select, update
+from sqlalchemy import create_engine, MetaData, Table, select, update, Column
 from sqlalchemy.orm import sessionmaker
 from contextlib import contextmanager
 from locust import HttpUser, task, between
@@ -37,7 +37,7 @@ def get_available_database():
     database_list = Table('database_list', metadata, autoload_with=engine)
     
     with engine.connect() as connection:
-        query = select([database_list.c.database_name]).where(database_list.c.status == 'available').order_by(database_list.c.database_name).limit(1)
+        query = select(database_list.c.database_name).where(database_list.c.status == 'available').order_by(database_list.c.database_name).limit(1)
         result = connection.execute(query).fetchone()
         if result:
             db_name = result[0]
