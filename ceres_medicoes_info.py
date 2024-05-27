@@ -5,7 +5,6 @@ from sqlalchemy import create_engine, MetaData, Table, select, update
 from sqlalchemy.orm import sessionmaker
 from contextlib import contextmanager
 from dotenv import load_dotenv
-
 import os
 import logging
 
@@ -125,23 +124,21 @@ def insert_data(engine, db_name):
 
 class DatabaseTaskSet(TaskSet):
     def on_start(self):
-        self.engine_dict = {}
+        self.db_name = None
+        self.engine = None
         num_databases = self.user.environment.runner.user_count
         database_list = get_available_databases(num_databases)
 
         if database_list:
-            for db_name in database_list:
-                engine = create_engine(f"mysql+pymysql://{DB_USER}:{DB_PASSWORD}@{DB_HOST}/{db_name}")
-                self.engine_dict[db_name] = engine
+            self.db_name = database_list.pop()
+            self.engine = create_engine(f"mysql+pymysql://{DB_USER}:{DB_PASSWORD}@{DB_HOST}/{self.db_name}")
         else:
             logging.error('No available databases to use')
 
     @task(10)
     def perform_insertion(self):
-        if self.engine_dict:
-            db_name = random.choice(list(self.engine_dict.keys()))
-            engine = self.engine_dict[db_name]
-            insert_data(engine, db_name)
+        if self.engine:
+            insert_data(self.engine, self.db_name)
 
 class DatabaseUser(HttpUser):
     tasks = [DatabaseTaskSet]
