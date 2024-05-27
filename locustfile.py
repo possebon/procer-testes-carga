@@ -8,7 +8,7 @@ from faker import Faker
 from sqlalchemy import create_engine, MetaData, Table, select, update
 from sqlalchemy.orm import sessionmaker
 from contextlib import contextmanager
-from locust import HttpUser, TaskSet, task, between
+from locust import HttpUser, task, between
 
 # Set up logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
@@ -29,8 +29,8 @@ databases = [f"db_{i}" for i in range(1, 2001)]  # Assuming databases are named 
 
 def get_available_database():
     engine = create_engine(REPORT_DB_URL)
-    metadata = MetaData(bind=engine)
-    database_list = Table('database_list', metadata, autoload=True)
+    metadata = MetaData()
+    database_list = Table('database_list', metadata, autoload_with=engine)
     
     with engine.connect() as connection:
         query = select([database_list.c.database_name]).where(database_list.c.status == 'available').order_by(database_list.c.database_name).limit(1)
@@ -45,9 +45,8 @@ def get_available_database():
             return None
 
 def get_valid_ids(engine, table, id_field):
-    metadata = MetaData(bind=engine)
-    metadata.reflect(bind=engine)
-    table = Table(table, metadata, autoload=True)
+    metadata = MetaData()
+    table = Table(table, metadata, autoload_with=engine)
     session = sessionmaker(bind=engine)()
     return [row[0] for row in session.query(getattr(table.c, id_field)).all()]
 
@@ -104,9 +103,8 @@ def get_session(engine):
         session.close()
 
 def log_execution(engine, db_name, status, execution_time):
-    metadata = MetaData(bind=engine)
-    metadata.reflect(bind=engine)
-    execution_logs = Table('execution_logs', metadata, autoload=True)
+    metadata = MetaData()
+    execution_logs = Table('execution_logs', metadata, autoload_with=engine)
     with get_session(engine) as session:
         ins = execution_logs.insert().values(
             container_id=CONTAINER_ID,
@@ -121,9 +119,8 @@ def insert_data(engine, db_name):
     valid_silo_ids = get_valid_ids(engine, 'ceres_silos', 'ID_Silo')
     valid_filial_ids = get_valid_ids(engine, 'ceres_filiais', 'ID_Filial')
 
-    metadata = MetaData(bind=engine)
-    metadata.reflect(bind=engine)
-    ceres_medicoes_info = Table('ceres_medicoes_info', metadata, autoload=True)
+    metadata = MetaData()
+    ceres_medicoes_info = Table('ceres_medicoes_info', metadata, autoload_with=engine)
 
     start_time = time.time()
     data = generate_random_data(valid_silo_ids, valid_filial_ids)
@@ -142,6 +139,7 @@ def insert_data(engine, db_name):
 
 class DatabaseUser(HttpUser):
     wait_time = between(1, 2)
+    host = "http://example.com"  # Dummy host to satisfy Locust's requirement
 
     def on_start(self):
         self.selected_db_name = get_available_database()
@@ -160,11 +158,12 @@ class DatabaseUser(HttpUser):
         if self.selected_db_name:
             logging.info(f'Cleaning up: setting {self.selected_db_name} back to available')
             engine = create_engine(REPORT_DB_URL)
+            metadata = MetaData()
+            database_list = Table('database_list', metadata, autoload_with=engine)
             with engine.connect() as connection:
-                database_list = Table('database_list', MetaData(bind=engine), autoload=True)
                 update_query = update(database_list).where(database_list.c.database_name == self.selected_db_name).values(status='available')
                 connection.execute(update_query)
 
 if __name__ == '__main__':
     import os
-    os.system("locust -f locustfile.py --users 1 --host localhost --spawn-rate 100")
+    os.system("locust -f locustfile.py --users 2000 --spawn-rate 100")
