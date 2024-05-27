@@ -14,7 +14,7 @@ fake = Faker()
 
 # Database connection details from environment variables
 DB_HOST = os.getenv('DB_HOST')
-DB_USER = os.getenv('DB_USERNAME')
+DB_USERNAME = os.getenv('DB_USERNAME')
 DB_PASSWORD = os.getenv('DB_PASSWORD')
 DB_PREFIX = 'ceres_'
 
@@ -84,7 +84,7 @@ class DatabaseTaskSet(TaskSet):
         num_databases = len(self.locust.environment.runner.user_classes[DatabaseUser].locust.users)
         for i in range(1, num_databases + 1):
             db_name = f"{DB_PREFIX}{i}"
-            engine = create_engine(f"mysql+pymysql://{DB_USER}:{DB_PASSWORD}@{DB_HOST}/{db_name}")
+            engine = create_engine(f"mysql+pymysql://{DB_USERNAME}:{DB_PASSWORD}@{DB_HOST}/{db_name}")
             self.engine_dict[db_name] = engine
 
     def on_stop(self):
