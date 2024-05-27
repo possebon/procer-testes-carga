@@ -1,10 +1,11 @@
-from locust import HttpUser, TaskSet, task, between
+from locust import HttpUser, TaskSet, task, between, constant
 import random
 from faker import Faker
 from sqlalchemy import create_engine, MetaData, Table, select, update
 from sqlalchemy.orm import sessionmaker
 from contextlib import contextmanager
 from dotenv import load_dotenv
+
 import os
 import logging
 
