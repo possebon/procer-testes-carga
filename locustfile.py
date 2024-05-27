@@ -167,4 +167,4 @@ class DatabaseUser(HttpUser):
 
 if __name__ == '__main__':
     import os
-    os.system("locust -f locustfile.py --users 2000 --spawn-rate 100")
+    os.system("locust -f locustfile.py --users 1 --spawn-rate 100")
