@@ -14,7 +14,7 @@ fake = Faker()
 
 # Database connection details from environment variables
 DB_HOST = os.getenv('DB_HOST')
-DB_USERNAME = os.getenv('DB_USERNAME')
+DB_USER = os.getenv('DB_USERNAME')
 DB_PASSWORD = os.getenv('DB_PASSWORD')
 DB_PREFIX = 'ceres_'
 
@@ -81,10 +81,10 @@ def insert_data(engine, db_name):
 class DatabaseTaskSet(TaskSet):
     def on_start(self):
         self.engine_dict = {}
-        num_databases = len(self.locust.environment.runner.user_classes[DatabaseUser].locust.users)
+        num_databases = len(self.user.environment.runner.user_classes[DatabaseUser].users)
         for i in range(1, num_databases + 1):
             db_name = f"{DB_PREFIX}{i}"
-            engine = create_engine(f"mysql+pymysql://{DB_USERNAME}:{DB_PASSWORD}@{DB_HOST}/{db_name}")
+            engine = create_engine(f"mysql+pymysql://{DB_USER}:{DB_PASSWORD}@{DB_HOST}/{db_name}")
             self.engine_dict[db_name] = engine
 
     def on_stop(self):
@@ -102,4 +102,4 @@ class DatabaseUser(HttpUser):
 
 if __name__ == "__main__":
     import os
-    os.system("locust -f ceres_medicoes_info.py")
+    os.system("locust -f path_to_this_script.py")
