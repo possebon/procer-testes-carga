@@ -144,7 +144,7 @@ class DatabaseTaskSet(TaskSet):
 
 class DatabaseUser(HttpUser):
     tasks = [DatabaseTaskSet]
-    wait_time = between(1, 5)
+    wait_time = constant(120)
 
 if __name__ == "__main__":
     import os
