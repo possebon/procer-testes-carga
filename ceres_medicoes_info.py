@@ -7,6 +7,7 @@ from contextlib import contextmanager
 from dotenv import load_dotenv
 import os
 import logging
+from threading import Lock
 
 # Set up logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
@@ -28,6 +29,12 @@ DATABASE_URL_TEMPLATE = 'mysql+pymysql://{username}:{password}@{host}/{dbname}'
 
 # Connection URL for the report_db
 REPORT_DB_URL = DATABASE_URL_TEMPLATE.format(username=DB_USER, password=DB_PASSWORD, host=DB_HOST, dbname='report_db')
+
+# Lock for synchronizing database allocation
+allocation_lock = Lock()
+
+# Shared list for database allocation
+allocated_databases = []
 
 @contextmanager
 def get_session(engine):
@@ -124,16 +131,18 @@ def insert_data(engine, db_name):
 
 class DatabaseTaskSet(TaskSet):
     def on_start(self):
-        self.db_name = None
-        self.engine = None
-        num_databases = self.user.environment.runner.user_count
-        database_list = get_available_databases(num_databases)
+        global allocated_databases
 
-        if database_list:
-            self.db_name = database_list.pop()
+        with allocation_lock:
+            if not allocated_databases:
+                num_databases = self.user.environment.runner.user_count
+                allocated_databases = get_available_databases(num_databases)
+                if not allocated_databases:
+                    logging.error('No available databases to use')
+                    return
+            
+            self.db_name = allocated_databases.pop()
             self.engine = create_engine(f"mysql+pymysql://{DB_USER}:{DB_PASSWORD}@{DB_HOST}/{self.db_name}")
-        else:
-            logging.error('No available databases to use')
 
     @task(10)
     def perform_insertion(self):
@@ -142,7 +151,7 @@ class DatabaseTaskSet(TaskSet):
 
 class DatabaseUser(HttpUser):
     tasks = [DatabaseTaskSet]
-    wait_time = constant(120)
+    wait_time = constant(20)
 
 if __name__ == "__main__":
     import os
