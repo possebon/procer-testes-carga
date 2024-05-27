@@ -9,6 +9,10 @@ from sqlalchemy import create_engine, MetaData, Table, select, update
 from sqlalchemy.orm import sessionmaker
 from contextlib import contextmanager
 from locust import HttpUser, task, between
+from dotenv import load_dotenv
+
+# Load environment variables from .env file
+load_dotenv()
 
 # Set up logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
