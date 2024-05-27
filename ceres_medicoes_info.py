@@ -102,4 +102,4 @@ class DatabaseUser(HttpUser):
 
 if __name__ == "__main__":
     import os
-    os.system("locust -f path_to_this_script.py")
+    os.system("locust -f ceres_medicoes_info.py")
