@@ -151,8 +151,8 @@ class DatabaseTaskSet(TaskSet):
 
 class DatabaseUser(HttpUser):
     tasks = [DatabaseTaskSet]
-    wait_time = constant(20)
+    wait_time = constant(120)
 
 if __name__ == "__main__":
     import os
-    os.system("locust -f ceres_medicoes_info.py")
+    os.system("locust -f ceres_medicoes_info.py --host http://localhost")
