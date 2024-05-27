@@ -1,7 +1,6 @@
 import os
 import random
 import logging
-import time
 import uuid
 from datetime import datetime
 from faker import Faker
@@ -32,8 +31,6 @@ DATABASE_URL_TEMPLATE = 'mysql+pymysql://{username}:{password}@{host}/{dbname}'
 
 # Connection URL for the report_db
 REPORT_DB_URL = DATABASE_URL_TEMPLATE.format(username=DB_USERNAME, password=DB_PASSWORD, host=DB_HOST, dbname='report_db')
-
-databases = [f"db_{i}" for i in range(1, 2001)]  # Assuming databases are named db_1, db_2, ..., db_2000
 
 def get_available_database():
     engine = create_engine(REPORT_DB_URL, pool_pre_ping=True, pool_size=1, max_overflow=0)
@@ -117,7 +114,6 @@ def insert_data(engine, db_name):
     metadata = MetaData()
     ceres_medicoes_info = Table('ceres_medicoes_info', metadata, autoload_with=engine)
 
-    start_time = time.time()
     data = generate_random_data(valid_silo_ids, valid_filial_ids)
     ins = ceres_medicoes_info.insert().values(data)
     try:
@@ -129,30 +125,28 @@ def insert_data(engine, db_name):
         logging.error(f'Insert failed into {db_name}: {e}')
 
 class DatabaseUser(HttpUser):
-    wait_time = between(1, 2)
+    wait_time = between(120, 120)  # Setting wait_time to 120 seconds
     host = "http://example.com"  # Dummy host to satisfy Locust's requirement
-
-    def on_start(self):
-        self.selected_db_name = get_available_database()
-        if not self.selected_db_name:
-            logging.error('No available database found, stopping user')
-            self.stop()
-        else:
-            self.db_engine = create_engine(DATABASE_URL_TEMPLATE.format(username=DB_USERNAME, password=DB_PASSWORD, host=DB_HOST, dbname=self.selected_db_name), pool_pre_ping=True, pool_size=1, max_overflow=0)
 
     @task
     def perform_insertion(self):
-        if self.selected_db_name:
-            insert_data(self.db_engine, self.selected_db_name)
+        db_name = get_available_database()
+        if not db_name:
+            logging.error('No available database found, stopping user')
+            self.stop()
+        else:
+            db_engine = create_engine(DATABASE_URL_TEMPLATE.format(username=DB_USERNAME, password=DB_PASSWORD, host=DB_HOST, dbname=db_name), pool_pre_ping=True, pool_size=1, max_overflow=0)
+            insert_data(db_engine, db_name)
 
     def on_stop(self):
-        if self.selected_db_name:
-            logging.info(f'Cleaning up: setting {self.selected_db_name} back to available')
+        db_name = get_available_database()
+        if db_name:
+            logging.info(f'Cleaning up: setting {db_name} back to available')
             engine = create_engine(REPORT_DB_URL, pool_pre_ping=True, pool_size=1, max_overflow=0)
             metadata = MetaData()
             database_list = Table('database_list', metadata, autoload_with=engine)
             with engine.connect() as connection:
-                update_query = update(database_list).where(database_list.c.database_name == self.selected_db_name).values(status='available')
+                update_query = update(database_list).where(database_list.c.database_name == db_name).values(status='available')
                 connection.execute(update_query)
 
 if __name__ == '__main__':
