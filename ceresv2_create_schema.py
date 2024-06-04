@@ -10,9 +10,9 @@ load_dotenv()
 
 # Configurações de conexão
 REPORT_DB_NAME = os.getenv('REPORT_DB_NAME')
-MARIADB_HOST = os.getenv('MARIADB_HOST')
-MARIADB_USERNAME = os.getenv('MARIADB_USERNAME')
-MARIADB_PASSWORD = os.getenv('MARIADB_PASSWORD')
+MARIADB_HOST = os.getenv('DB_HOST')
+MARIADB_USERNAME = os.getenv('DB_USERNAME')
+MARIADB_PASSWORD = os.getenv('DB_PASSWORD')
 
 PG_HOST = os.getenv('PG_HOST')
 PG_USERNAME = os.getenv('PG_USERNAME')
