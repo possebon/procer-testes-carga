@@ -8,6 +8,8 @@ from dotenv import load_dotenv
 import os
 import logging
 from threading import Lock
+from datetime import datetime
+
 
 # Set up logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
@@ -72,12 +74,14 @@ def get_valid_ids(engine, table_name, id_field):
         return [row[0] for row in result]
 
 def generate_random_data(valid_silo_ids, valid_filial_ids):
+    current_date = datetime.now().date()
+    current_time = datetime.now().time().strftime("%H:%M:%S")    
     return {
         "ID_Silo": random.choice(valid_silo_ids),
         "ID_Filial": random.choice(valid_filial_ids),
         "Status_Comunicacao": fake.word(),
-        "Tempo_Data": fake.date(),
-        "Tempo_Hora": fake.time(),
+        "Tempo_Data": current_date,
+        "Tempo_Hora": current_time,
         "DataHoraEquipto": fake.date_time().strftime("%Y-%m-%d %H:%M:%S"),
         "Temp_Externa": round(random.uniform(10, 35), 2),
         "Temp_Externa_Conectado": random.randint(0, 1),
