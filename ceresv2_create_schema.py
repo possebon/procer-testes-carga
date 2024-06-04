@@ -34,14 +34,14 @@ postgresql_session = PostgresqlSession()
 
 # Função para criar a tabela schema_created se não existir
 def create_schema_created_table():
-    create_table_query = """
+    create_table_query = sa.text("""
     CREATE TABLE IF NOT EXISTS schema_created (
         id INT AUTO_INCREMENT PRIMARY KEY,
         database_name VARCHAR(255) NOT NULL,
         ID_Filial INT NOT NULL,
         schema_name VARCHAR(255) NOT NULL
     );
-    """
+    """)
     mariadb_session.execute(create_table_query)
     mariadb_session.commit()
 
@@ -57,7 +57,7 @@ def main():
         create_schema_created_table()
 
         # Obter lista de databases
-        database_list = mariadb_session.execute("SELECT database_name FROM database_list").fetchall()
+        database_list = mariadb_session.execute(sa.text("SELECT database_name FROM database_list")).fetchall()
 
         # Ler o conteúdo do arquivo unidade_modelo.sql
         sql_template = read_sql_file('unidade_modelo.sql')
@@ -66,7 +66,7 @@ def main():
             database_name = db[0]
 
             # Selecionar quantidade de ceres_filiais
-            ceres_filiais = mariadb_session.execute(f"SELECT ID_Filial FROM {database_name}.ceres_filiais").fetchall()
+            ceres_filiais = mariadb_session.execute(sa.text(f"SELECT ID_Filial FROM {database_name}.ceres_filiais")).fetchall()
 
             for filial in ceres_filiais:
                 id_filial = filial[0]
@@ -77,7 +77,7 @@ def main():
                 schema_sql = sql_template.replace('unidade_modelo', schema_name)
 
                 # Criar schema no PostgreSQL
-                postgresql_session.execute(schema_sql)
+                postgresql_session.execute(sa.text(schema_sql))
                 postgresql_session.commit()
 
                 # Registrar no MariaDB
