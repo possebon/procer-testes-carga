@@ -50,6 +50,14 @@ def read_sql_file(file_path):
     with open(file_path, 'r') as file:
         return file.read()
 
+# Função para executar múltiplos comandos SQL
+def execute_multiple_sql_commands(session, sql_commands):
+    commands = sql_commands.split(';')
+    for command in commands:
+        if command.strip():
+            session.execute(sa.text(command))
+    session.commit()
+
 # Função principal
 def main():
     try:
@@ -77,8 +85,7 @@ def main():
                 schema_sql = sql_template.replace('unidade_modelo', schema_name)
 
                 # Criar schema no PostgreSQL
-                postgresql_session.execute(sa.text(schema_sql))
-                postgresql_session.commit()
+                execute_multiple_sql_commands(postgresql_session, schema_sql)
 
                 # Registrar no MariaDB
                 insert_query = sa.text("""
