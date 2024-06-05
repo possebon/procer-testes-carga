@@ -93,27 +93,39 @@ def main():
 
             for filial in ceres_filiais:
                 id_filial = filial[0]
-                schema_uuid = str(uuid.uuid4())
-                schema_name = f'unidade_{schema_uuid}'
 
-                # Escapar o nome do schema no template SQL
-                escaped_schema_name = f'"{schema_name}"'
-                schema_sql = sql_template.replace('unidade_modelo', escaped_schema_name)
-
-                # Criar schema no PostgreSQL usando psql
-                execute_psql(schema_name, schema_sql)
-
-                # Registrar no MariaDB
-                insert_query = sa.text("""
-                INSERT INTO schema_created (database_name, ID_Filial, schema_name)
-                VALUES (:database_name, :ID_Filial, :schema_name)
+                # Verificar se o schema já foi criado
+                schema_exists_query = sa.text("""
+                SELECT COUNT(*) FROM schema_created
+                WHERE database_name = :database_name AND ID_Filial = :ID_Filial
                 """)
-                mariadb_session.execute(insert_query, {
+                result = mariadb_session.execute(schema_exists_query, {
                     'database_name': database_name,
-                    'ID_Filial': id_filial,
-                    'schema_name': schema_name
-                })
-                mariadb_session.commit()
+                    'ID_Filial': id_filial
+                }).scalar()
+
+                if result == 0:
+                    schema_uuid = str(uuid.uuid4())
+                    schema_name = f'unidade_{schema_uuid}'
+
+                    # Escapar o nome do schema no template SQL
+                    escaped_schema_name = f'"{schema_name}"'
+                    schema_sql = sql_template.replace('unidade_modelo', escaped_schema_name)
+
+                    # Criar schema no PostgreSQL usando psql
+                    execute_psql(schema_name, schema_sql)
+
+                    # Registrar no MariaDB
+                    insert_query = sa.text("""
+                    INSERT INTO schema_created (database_name, ID_Filial, schema_name)
+                    VALUES (:database_name, :ID_Filial, :schema_name)
+                    """)
+                    mariadb_session.execute(insert_query, {
+                        'database_name': database_name,
+                        'ID_Filial': id_filial,
+                        'schema_name': schema_name
+                    })
+                    mariadb_session.commit()
 
     except SQLAlchemyError as e:
         print(f"Erro ao executar o script: {e}")
