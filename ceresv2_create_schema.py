@@ -55,11 +55,12 @@ def execute_pg_restore(schema_name, sql_template):
 
     # Comando pg_restore
     pg_restore_command = [
-        'psql',
-        f'--host={PG_HOST}',
-        f'--username={PG_USERNAME}',
-        f'--dbname={PG_DB_NAME}',
-        '--file', temp_sql_file
+        'pg_restore',
+        '--host', PG_HOST,
+        '--username', PG_USERNAME,
+        '--dbname', PG_DB_NAME,
+        '--schema', schema_name,
+        temp_sql_file
     ]
 
     # Executar o comando pg_restore
