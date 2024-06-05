@@ -1,10 +1,15 @@
 import uuid
 import os
+import logging
 from dotenv import load_dotenv
 import sqlalchemy as sa
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.exc import SQLAlchemyError
 import subprocess
+
+# Configurar logging
+logging.basicConfig(filename='script.log', level=logging.ERROR,
+                    format='%(asctime)s %(levelname)s:%(message)s')
 
 # Carregar variáveis de ambiente do arquivo .env
 load_dotenv()
@@ -67,8 +72,10 @@ def execute_psql(schema_name, sql_template):
         subprocess.run(psql_command, check=True, env={
             'PGPASSWORD': PG_PASSWORD
         })
+        return True
     except subprocess.CalledProcessError as e:
-        print(f"Erro ao executar psql: {e}")
+        logging.error(f"Erro ao executar psql para schema {schema_name}: {e}")
+        return False
     finally:
         # Remover o arquivo temporário
         os.remove(temp_sql_file)
@@ -113,22 +120,21 @@ def main():
                     schema_sql = sql_template.replace('unidade_modelo', escaped_schema_name)
 
                     # Criar schema no PostgreSQL usando psql
-                    execute_psql(schema_name, schema_sql)
-
-                    # Registrar no MariaDB
-                    insert_query = sa.text("""
-                    INSERT INTO schema_created (database_name, ID_Filial, schema_name)
-                    VALUES (:database_name, :ID_Filial, :schema_name)
-                    """)
-                    mariadb_session.execute(insert_query, {
-                        'database_name': database_name,
-                        'ID_Filial': id_filial,
-                        'schema_name': schema_name
-                    })
-                    mariadb_session.commit()
+                    if execute_psql(schema_name, schema_sql):
+                        # Registrar no MariaDB
+                        insert_query = sa.text("""
+                        INSERT INTO schema_created (database_name, ID_Filial, schema_name)
+                        VALUES (:database_name, :ID_Filial, :schema_name)
+                        """)
+                        mariadb_session.execute(insert_query, {
+                            'database_name': database_name,
+                            'ID_Filial': id_filial,
+                            'schema_name': schema_name
+                        })
+                        mariadb_session.commit()
 
     except SQLAlchemyError as e:
-        print(f"Erro ao executar o script: {e}")
+        logging.error(f"Erro ao executar o script: {e}")
     finally:
         mariadb_session.close()
 
