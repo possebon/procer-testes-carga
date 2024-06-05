@@ -4,6 +4,7 @@ from dotenv import load_dotenv
 import sqlalchemy as sa
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.exc import SQLAlchemyError
+import subprocess
 
 # Carregar variáveis de ambiente do arquivo .env
 load_dotenv()
@@ -27,11 +28,6 @@ mariadb_engine = sa.create_engine(mariadb_url)
 MariadbSession = sessionmaker(bind=mariadb_engine)
 mariadb_session = MariadbSession()
 
-# Conexão com PostgreSQL
-postgresql_engine = sa.create_engine(postgresql_url)
-PostgresqlSession = sessionmaker(bind=postgresql_engine)
-postgresql_session = PostgresqlSession()
-
 # Função para criar a tabela schema_created se não existir
 def create_schema_created_table():
     create_table_query = sa.text("""
@@ -50,13 +46,32 @@ def read_sql_file(file_path):
     with open(file_path, 'r') as file:
         return file.read()
 
-# Função para executar múltiplos comandos SQL
-def execute_multiple_sql_commands(session, sql_commands):
-    commands = sql_commands.split(';')
-    for command in commands:
-        if command.strip():
-            session.execute(sa.text(command))
-    session.commit()
+# Função para executar o pg_restore
+def execute_pg_restore(schema_name, sql_template):
+    # Criar um arquivo temporário com o conteúdo do template SQL modificado
+    temp_sql_file = f'/tmp/{schema_name}.sql'
+    with open(temp_sql_file, 'w') as file:
+        file.write(sql_template)
+
+    # Comando pg_restore
+    pg_restore_command = [
+        'psql',
+        f'--host={PG_HOST}',
+        f'--username={PG_USERNAME}',
+        f'--dbname={PG_DB_NAME}',
+        '--file', temp_sql_file
+    ]
+
+    # Executar o comando pg_restore
+    try:
+        subprocess.run(pg_restore_command, check=True, env={
+            'PGPASSWORD': PG_PASSWORD
+        })
+    except subprocess.CalledProcessError as e:
+        print(f"Erro ao executar pg_restore: {e}")
+    finally:
+        # Remover o arquivo temporário
+        os.remove(temp_sql_file)
 
 # Função principal
 def main():
@@ -84,8 +99,8 @@ def main():
                 # Substituir o nome do schema no template SQL
                 schema_sql = sql_template.replace('unidade_modelo', schema_name)
 
-                # Criar schema no PostgreSQL
-                execute_multiple_sql_commands(postgresql_session, schema_sql)
+                # Criar schema no PostgreSQL usando pg_restore
+                execute_pg_restore(schema_name, schema_sql)
 
                 # Registrar no MariaDB
                 insert_query = sa.text("""
@@ -103,7 +118,6 @@ def main():
         print(f"Erro ao executar o script: {e}")
     finally:
         mariadb_session.close()
-        postgresql_session.close()
 
 if __name__ == "__main__":
     main()
