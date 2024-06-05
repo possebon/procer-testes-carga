@@ -46,15 +46,15 @@ def read_sql_file(file_path):
     with open(file_path, 'r') as file:
         return file.read()
 
-# Função para executar o pg_restore
-def execute_pg_restore(schema_name, sql_template):
+# Função para executar o psql
+def execute_psql(schema_name, sql_template):
     # Criar um arquivo temporário com o conteúdo do template SQL modificado
     temp_sql_file = f'/tmp/{schema_name}.sql'
     with open(temp_sql_file, 'w') as file:
         file.write(sql_template)
 
-    # Comando pg_restore
-    pg_restore_command = [
+    # Comando psql
+    psql_command = [
         'psql',
         f'--host={PG_HOST}',
         f'--username={PG_USERNAME}',
@@ -62,13 +62,13 @@ def execute_pg_restore(schema_name, sql_template):
         '--file', temp_sql_file
     ]
 
-    # Executar o comando pg_restore
+    # Executar o comando psql
     try:
-        subprocess.run(pg_restore_command, check=True, env={
+        subprocess.run(psql_command, check=True, env={
             'PGPASSWORD': PG_PASSWORD
         })
     except subprocess.CalledProcessError as e:
-        print(f"Erro ao executar pg_restore: {e}")
+        print(f"Erro ao executar psql: {e}")
     finally:
         # Remover o arquivo temporário
         os.remove(temp_sql_file)
@@ -94,13 +94,14 @@ def main():
             for filial in ceres_filiais:
                 id_filial = filial[0]
                 schema_uuid = str(uuid.uuid4())
-                schema_name = f"unidade_{schema_uuid}"
+                schema_name = f'unidade_{schema_uuid}'
 
-                # Substituir o nome do schema no template SQL
-                schema_sql = sql_template.replace('unidade_modelo', schema_name)
+                # Escapar o nome do schema no template SQL
+                escaped_schema_name = f'"{schema_name}"'
+                schema_sql = sql_template.replace('unidade_modelo', escaped_schema_name)
 
-                # Criar schema no PostgreSQL usando pg_restore
-                execute_pg_restore(schema_name, schema_sql)
+                # Criar schema no PostgreSQL usando psql
+                execute_psql(schema_name, schema_sql)
 
                 # Registrar no MariaDB
                 insert_query = sa.text("""
